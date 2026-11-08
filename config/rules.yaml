@@ -1,0 +1,40 @@
+# Reglas del modelo de riesgo. Cambiar un valor => subir "version".
+# Cada JSON publicado indica qué versión de reglas lo generó.
+version: "2026.11-1"
+
+radiation:
+  baseline_days: 30          # ventana de la mediana por estación
+  min_baseline_points: 72    # lecturas mínimas para confiar en la línea base
+  z_threshold: 4.0           # z robusto (mediana/MAD) para marcar una lectura alta
+  consecutive: 2             # lecturas seguidas sobre el umbral
+  mad_floor_ratio: 0.03      # MAD mínimo = 3% de la mediana (evita z enormes con datos muy planos)
+  min_anomalous_stations: 2  # estaciones anómalas para "señal radiológica"
+  max_age_hours: 6           # una estación con datos más viejos no cuenta
+
+media:
+  baseline_days: 90
+  min_baseline_days: 30
+  ratio_threshold: 3.0       # volumen diario >= 3x la mediana
+  consecutive_days: 2
+  min_daily_articles: 20     # evita disparos con volúmenes diminutos
+
+official:
+  active_days: 7             # un aviso de incidente se muestra como activo 7 días
+  incident_keywords: [incident, emergency, accident, radioactive release, leak, radiation level, radiological,
+                      shelling, drone, attack, strike, power loss, off-site power, blackout, ines,
+                      evacuat, contamination, explosion, fire at]
+
+confidence:
+  fresh_hours: 6
+  stale_hours: 24
+
+notifications:
+  enabled: false             # APAGADO durante la calibración (30 días)
+  min_level: 2
+  persist_runs: 2            # el nivel debe sostenerse en 2 ejecuciones
+  cooldown_hours: 12
+  downgrade_hold_hours: 24
+  breaker_max_regions: 3     # si suben más de 3 regiones a la vez, no se envía nada
+
+history:
+  keep_days: 90

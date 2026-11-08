@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>IAEA Top News</title>
+    <link>https://www.iaea.org/</link>
+    <description>Ejemplo de prueba (contenido ficticio)</description>
+    <item>
+      <title>Update: Drone Attack Reported Near Zaporizhzhia Nuclear Power Plant</title>
+      <link>https://www.iaea.org/test/zaporizhzhia-update</link>
+      <description><![CDATA[<p>IAEA team reports a drone strike near the site. Off-site power was briefly lost.</p>]]></description>
+      <pubDate>Tue, 03 Nov 2026 10:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Chile Uses Nuclear Science to Authenticate Honey</title>
+      <link>https://www.iaea.org/test/chile-honey</link>
+      <description>Nuclear techniques help producers in Chile.</description>
+      <pubDate>Mon, 02 Nov 2026 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>IAEA Strengthens Cooperation with Rwanda</title>
+      <link>https://www.iaea.org/test/rwanda</link>
+      <description>Summit in Africa.</description>
+      <pubDate>Sun, 01 Nov 2026 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Old statement on Iran verification</title>
+      <link>https://www.iaea.org/test/iran-old</link>
+      <description>Verification in Iran continues.</description>
+      <pubDate>Wed, 01 Jul 2026 08:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

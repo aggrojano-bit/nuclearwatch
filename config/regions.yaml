@@ -1,0 +1,103 @@
+# Regiones del MVP. Cada región define:
+#  - countries: códigos ISO-3166 alfa-2 (para el mapa)
+#  - names: nombres que se buscan en comunicados oficiales (minúsculas, es/en)
+#  - gdelt_query: términos geográficos para la señal mediática
+#  - safecast_points: puntos [lat, lon, radio_km] donde se buscan estaciones Safecast
+#  - radnet_stations: estaciones EPA RadNet [estado, ciudad] (solo Norteamérica)
+version: 1
+regions:
+  - id: europa-oriental
+    name: Europa Oriental
+    countries: [UA, RU, BY, MD]
+    names: [ukraine, ucrania, russia, rusia, belarus, bielorrusia, moldova, moldavia, zaporizhzhia, chornobyl, chernobyl, kursk]
+    gdelt_query: '(Ukraine OR Russia OR Belarus OR Zaporizhzhia)'
+    safecast_points:
+      - [50.45, 30.52, 150]   # Kyiv
+      - [47.51, 34.58, 150]   # Enerhodar / Zaporizhzhia
+      - [55.75, 37.62, 150]   # Moscú
+    radnet_stations: []
+
+  - id: medio-oriente
+    name: Medio Oriente
+    countries: [IR, IL, SA, AE, IQ, SY, JO, LB, KW, QA, BH, OM, YE, PS]
+    names: [iran, irán, israel, saudi, arabia saudita, emirates, emiratos, iraq, irak, syria, siria, jordan, jordania, lebanon, líbano, bushehr, natanz, fordow, isfahan, dimona, barakah]
+    gdelt_query: '(Iran OR Israel OR Bushehr OR Natanz OR Fordow OR Dimona)'
+    safecast_points:
+      - [32.08, 34.78, 150]   # Tel Aviv
+      - [25.20, 55.27, 200]   # Dubái
+    radnet_stations: []
+
+  - id: peninsula-coreana
+    name: Península Coreana
+    countries: [KP, KR]
+    names: [north korea, corea del norte, dprk, south korea, corea del sur, yongbyon, punggye]
+    gdelt_query: '("North Korea" OR Pyongyang OR Yongbyon OR "South Korea")'
+    safecast_points:
+      - [37.57, 126.98, 150]  # Seúl
+      - [35.18, 129.08, 150]  # Busan
+    radnet_stations: []
+
+  - id: asia-sur
+    name: Asia del Sur
+    countries: [IN, PK]
+    names: [india, pakistan, pakistán, kashmir, cachemira]
+    gdelt_query: '(India OR Pakistan OR Kashmir)'
+    safecast_points:
+      - [28.61, 77.21, 200]   # Nueva Delhi
+      - [19.08, 72.88, 200]   # Mumbai
+    radnet_stations: []
+
+  - id: asia-oriental
+    name: Asia Oriental
+    countries: [CN, TW, JP, MN]
+    names: [china, taiwan, taiwán, japan, japón, fukushima, mongolia]
+    gdelt_query: '(China OR Taiwan OR Japan OR Fukushima)'
+    safecast_points:
+      - [35.68, 139.76, 100]  # Tokio
+      - [37.42, 141.03, 60]   # Fukushima Daiichi
+      - [25.03, 121.57, 150]  # Taipéi
+      - [22.32, 114.17, 150]  # Hong Kong
+    radnet_stations: []
+
+  - id: europa-occidental
+    name: Europa Occidental
+    countries: [FR, DE, GB, ES, IT, NL, BE, CH, AT, PL, PT, IE, SE, NO, FI, DK, CZ]
+    names: [france, francia, germany, alemania, united kingdom, reino unido, britain, spain, españa, italy, italia, netherlands, belgium, bélgica, switzerland, suiza, poland, polonia, sweden, suecia, finland, finlandia]
+    gdelt_query: '(France OR Germany OR Britain OR Poland OR NATO)'
+    safecast_points:
+      - [51.51, -0.13, 150]   # Londres
+      - [48.86, 2.35, 150]    # París
+      - [52.52, 13.40, 150]   # Berlín
+      - [52.37, 4.90, 150]    # Ámsterdam
+    radnet_stations: []
+
+  - id: norteamerica
+    name: Norteamérica
+    countries: [US, CA, MX]
+    names: [united states, estados unidos, canada, canadá, mexico, méxico]
+    gdelt_query: '("United States" OR Pentagon OR Canada OR Mexico)'
+    safecast_points:
+      - [34.05, -118.24, 150] # Los Ángeles
+      - [40.71, -74.01, 150]  # Nueva York
+    radnet_stations:
+      - [DC, WASHINGTON]
+      - [CA, LOS ANGELES]
+      - [NY, NYC (EML)]
+      - [IL, CHICAGO]
+      - [TX, HOUSTON]
+      - [WA, SEATTLE]
+      - [FL, MIAMI]
+      - [CO, DENVER]
+      - [GA, ATLANTA]
+      - [AK, ANCHORAGE]
+
+  - id: sudamerica
+    name: Sudamérica
+    countries: [CL, AR, BR, PE, BO, CO, VE, EC, UY, PY]
+    names: [chile, argentina, brazil, brasil, peru, perú, bolivia, colombia, venezuela, ecuador, uruguay, paraguay, angra, atucha]
+    gdelt_query: '(Chile OR Argentina OR Brazil OR Venezuela OR Angra OR Atucha)'
+    safecast_points:
+      - [-33.45, -70.67, 150] # Santiago
+      - [-34.60, -58.38, 150] # Buenos Aires
+      - [-23.55, -46.63, 150] # São Paulo
+    radnet_stations: []

@@ -1,0 +1,25 @@
+version: 1
+user_agent: "NuclearWatch/0.1 (+https://github.com/; proyecto de codigo abierto)"
+timeout_seconds: 30
+retries: 2
+
+iaea:
+  feeds:
+    topnews: https://www.iaea.org/feeds/topnews
+    pressalerts: https://www.iaea.org/feeds/pressalerts
+    dgstatements: https://www.iaea.org/feeds/dgstatements
+  max_age_days: 30
+
+safecast:
+  url: https://api.safecast.org/measurements.json
+  lookback_hours: 6
+  per_page: 500
+
+epa_radnet:
+  url_template: "https://radnet.epa.gov/cdx-radnet-rest/api/rest/csv/{year}/fixed/{state}/{city}"
+
+gdelt:
+  url: https://api.gdeltproject.org/api/v2/doc/doc
+  base_terms: '(nuclear OR radiation OR radiactiv OR "nuclear plant" OR enrichment OR warhead)'
+  timespan: 3months
+  seconds_between_requests: 6

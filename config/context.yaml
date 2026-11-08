@@ -1,0 +1,33 @@
+# Contexto estructural: datos estáticos que NO cambian el nivel; solo se muestran
+# como contexto en el detalle de cada región. Revisar a mano cada 3 meses.
+# Cada dato debe llevar su fuente. Los marcados "por_verificar" no se muestran en la app.
+version: 1
+reviewed: "2026-11-05"
+status: por_verificar   # cambiar a "verificado" tras la revisión de ChatGPT/usuario
+regions:
+  europa-oriental:
+    - text: "Rusia es un Estado con armas nucleares."
+      source: https://www.sipri.org/yearbook
+    - text: "La central de Zaporizhzhia se encuentra en zona de conflicto activo."
+      source: https://www.iaea.org/ukraine
+  medio-oriente:
+    - text: "El programa nuclear de Irán está bajo verificación del OIEA."
+      source: https://www.iaea.org/newscenter/focus/iran
+  peninsula-coreana:
+    - text: "Corea del Norte ha realizado ensayos nucleares."
+      source: https://www.ctbto.org/
+  asia-sur:
+    - text: "India y Pakistán son Estados con armas nucleares."
+      source: https://www.sipri.org/yearbook
+  asia-oriental:
+    - text: "China es un Estado con armas nucleares."
+      source: https://www.sipri.org/yearbook
+  europa-occidental:
+    - text: "Francia y el Reino Unido son Estados con armas nucleares."
+      source: https://www.sipri.org/yearbook
+  norteamerica:
+    - text: "Estados Unidos es un Estado con armas nucleares."
+      source: https://www.sipri.org/yearbook
+  sudamerica:
+    - text: "Sudamérica forma parte de la zona libre de armas nucleares del Tratado de Tlatelolco."
+      source: https://www.opanal.org/
