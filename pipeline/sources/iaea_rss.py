@@ -40,6 +40,16 @@ def _text(el, *names) -> str:
 def _date(value: str) -> datetime | None:
     if not value:
         return None
+    value = " ".join(value.split())
+    # El feed del OIEA usa "AA-MM-DD HH:MM" (ej. "26-11-06 14:46"), hora de Viena: se trata como UTC
+    # (error máximo de 1-2 h, irrelevante para una ventana de 7 días).
+    m = re.fullmatch(r"(\d{2})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})", value)
+    if m:
+        y, mo, d, h, mi = (int(x) for x in m.groups())
+        try:
+            return datetime(2000 + y, mo, d, h, mi, tzinfo=timezone.utc)
+        except ValueError:
+            return None
     try:
         dt = parsedate_to_datetime(value)
     except (TypeError, ValueError):

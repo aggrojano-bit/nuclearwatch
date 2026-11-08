@@ -285,3 +285,16 @@ def test_iaea_empty_feed_reports_error():
     net = lambda url, params, t: "<html><body>blocked</body></html>"  # noqa: E731
     with pytest.raises(RuntimeError, match="0 elementos"):
         iaea_rss.fetch(fake_http(net), {"feeds": {"a": "u"}}, REGIONS, RULES, NOW)
+
+
+def test_iaea_real_date_format():
+    xml = """<?xml version="1.0" encoding="utf-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0"><channel><title>IAEA Top News</title>
+<item><title>Update 374 – IAEA Director General Statement on Situation in Ukraine</title>
+<link>http://www.iaea.org/newscenter/pressreleases/update-374</link><description><![CDATA[]]></description>
+<guid isPermaLink="false">290478</guid><pubDate>
+26-11-06  14:46
+</pubDate></item></channel></rss>"""
+    items = iaea_rss.parse_feed(xml, "topnews")
+    assert len(items) == 1 and items[0]["published"] == datetime(2026, 11, 6, 14, 46, tzinfo=timezone.utc)
+    out = iaea_rss.classify(items, REGIONS, RULES["official"]["incident_keywords"])
+    assert out[0]["regions"] == ["europa-oriental"] and out[0]["kind"] == "statement"
