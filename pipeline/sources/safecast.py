@@ -72,19 +72,24 @@ def merge_state(state: dict, region_id: str, new: dict[str, dict], now: datetime
     return state
 
 
-def fetch(http: Http, cfg: dict, region: dict, now: datetime) -> list[dict]:
+def fetch(http: Http, cfg: dict, region: dict, now: datetime) -> tuple[list[dict], list[str]]:
+    """Cada punto se consulta aparte: si uno falla, los demás siguen."""
     after = (now - timedelta(hours=int(cfg.get("lookback_hours", 6)))).strftime("%Y-%m-%dT%H:%M:%S")
     readings: list[dict] = []
+    errors: list[str] = []
     for lat, lon, radius_km in region.get("safecast_points", []):
-        text = http.get(cfg["url"], {
-            "latitude": lat,
-            "longitude": lon,
-            "distance": int(radius_km * 1000),
-            "captured_after": after,
-            "per_page": cfg.get("per_page", 500),
-        })
-        readings.extend(parse_measurements(text))
-    return readings
+        try:
+            text = http.get(cfg["url"], {
+                "latitude": lat,
+                "longitude": lon,
+                "distance": int(radius_km * 1000),
+                "captured_after": after,
+                "per_page": cfg.get("per_page", 500),
+            }, timeout=int(cfg.get("timeout_seconds", 45)), retries=int(cfg.get("retries", 0)))
+            readings.extend(parse_measurements(text))
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"({lat},{lon}) {str(exc)[:120]}")
+    return readings, errors
 
 
 def to_series(region_state: dict) -> list[dict]:

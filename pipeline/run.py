@@ -47,8 +47,9 @@ def run(site: Path, http: Http | None = None, now: datetime | None = None, confi
 
     # 1. Comunicados oficiales
     try:
-        notices = iaea_rss.fetch(http, sources["iaea"], regions_cfg, rules, now)
-        _health(health, prev_health, "iaea", True, now, count=len(notices))
+        notices, raw_count = iaea_rss.fetch(http, sources["iaea"], regions_cfg, rules, now)
+        _health(health, prev_health, "iaea", raw_count > 0, now, "" if raw_count else "feeds sin elementos", len(notices))
+        health["iaea"]["read"] = raw_count
     except Exception as exc:  # noqa: BLE001
         notices = []
         _health(health, prev_health, "iaea", False, now, str(exc))
@@ -60,13 +61,12 @@ def run(site: Path, http: Http | None = None, now: datetime | None = None, confi
     region_stations: dict[str, list[dict]] = {}
     for reg in regions_cfg:
         series = []
-        try:
-            readings = safecast.fetch(http, sources["safecast"], reg, now)
-            sc_count += len(readings)
-            safecast.merge_state(sc_state, reg["id"], safecast.hourly(readings), now, rules["radiation"]["baseline_days"] + 1)
-        except Exception as exc:  # noqa: BLE001
-            sc_ok = False
-            sc_err.append(f"{reg['id']}: {exc}")
+        readings, errs = safecast.fetch(http, sources["safecast"], reg, now)
+        sc_count += len(readings)
+        safecast.merge_state(sc_state, reg["id"], safecast.hourly(readings), now, rules["radiation"]["baseline_days"] + 1)
+        if errs:
+            sc_err.extend(f"{reg['id']}: {e}" for e in errs)
+            sc_ok = sc_ok and len(errs) < len(reg.get("safecast_points", []))
         series.extend(safecast.to_series(sc_state.get(reg["id"], {})))
         if reg.get("radnet_stations"):
             rn_used = True
@@ -83,17 +83,31 @@ def run(site: Path, http: Http | None = None, now: datetime | None = None, confi
     if rn_used:
         _health(health, prev_health, "epa_radnet", rn_ok, now, "; ".join(rn_err), rn_count)
 
-    # 3. Noticias (GDELT)
-    md_ok, md_err = True, []
-    region_media: dict[str, dict] = {}
-    for reg in regions_cfg:
+    # 3. Noticias (GDELT): pocas consultas por ejecución, el resto sale del caché
+    gd_cfg = sources["gdelt"]
+    gd_state = read_json(state_dir / "gdelt.json", {})
+    md_err, md_done = [], 0
+    for reg in gdelt.due_regions(gd_state, regions_cfg, gd_cfg, now):
         try:
-            region_media[reg["id"]] = media_signal.evaluate(gdelt.fetch(http, sources["gdelt"], reg), rules, now)
+            gdelt.store(gd_state, reg["id"], gdelt.fetch(http, gd_cfg, reg), now)
+            md_done += 1
         except Exception as exc:  # noqa: BLE001
-            md_ok = False
             md_err.append(f"{reg['id']}: {exc}")
+            gd_state.setdefault(reg["id"], {})["last_error_at"] = iso(now)
+            if "429" in str(exc):
+                break  # límite de uso: no insistir en esta ejecución
+    write_json(state_dir / "gdelt.json", gd_state)
+    region_media: dict[str, dict] = {}
+    fresh = 0
+    for reg in regions_cfg:
+        days = gdelt.cached_days(gd_state, reg["id"], gd_cfg, now)
+        if days is None:
             region_media[reg["id"]] = {"status": "sin_datos", "active": False}
-    _health(health, prev_health, "gdelt", md_ok, now, "; ".join(md_err))
+        else:
+            fresh += 1
+            region_media[reg["id"]] = media_signal.evaluate(days, rules, now)
+    _health(health, prev_health, "gdelt", fresh > 0 and not (md_err and md_done == 0), now,
+            "; ".join(md_err), fresh)
 
     # 4. Niveles
     scored = []

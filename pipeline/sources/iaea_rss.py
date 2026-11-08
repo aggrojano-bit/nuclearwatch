@@ -100,4 +100,4 @@ def fetch(http: Http, cfg: dict, regions: list[dict], rules: dict, now: datetime
         raise RuntimeError("; ".join(errors))
     cutoff = now - timedelta(days=int(cfg.get("max_age_days", 30)))
     recent = [i for i in seen.values() if i["published"] >= cutoff]
-    return classify(recent, regions, rules["official"]["incident_keywords"])
+    return classify(recent, regions, rules["official"]["incident_keywords"]), len(seen)

@@ -73,32 +73,33 @@ class Http:
     _last_call: dict[str, float] = field(default_factory=dict)
     sleep: Callable[[float], None] = time.sleep
 
-    def get(self, url: str, params: dict | None = None, throttle_key: str | None = None) -> str:
+    def get(self, url: str, params: dict | None = None, throttle_key: str | None = None,
+            timeout: int | None = None, retries: int | None = None) -> str:
         params = params or {}
-        if throttle_key and throttle_key in self.min_interval:
-            wait = self.min_interval[throttle_key] - (time.monotonic() - self._last_call.get(throttle_key, 0))
-            if wait > 0:
-                self.sleep(wait)
+        timeout = timeout or self.timeout
+        retries = self.retries if retries is None else retries
         last_error: Exception | None = None
-        for attempt in range(self.retries + 1):
+        for attempt in range(retries + 1):
+            if throttle_key and throttle_key in self.min_interval:
+                wait = self.min_interval[throttle_key] - (time.monotonic() - self._last_call.get(throttle_key, -1e9))
+                if wait > 0:
+                    self.sleep(wait)
             try:
-                if self.transport:
-                    text = self.transport(url, params, self.timeout)
-                else:
-                    text = self._real_get(url, params)
                 if throttle_key:
                     self._last_call[throttle_key] = time.monotonic()
-                return text
+                if self.transport:
+                    return self.transport(url, params, timeout)
+                return self._real_get(url, params, timeout)
             except Exception as exc:  # noqa: BLE001 - se reintenta cualquier fallo de red
                 last_error = exc
-                if attempt < self.retries:
+                if attempt < retries:
                     self.sleep(2 * (attempt + 1))
-        raise FetchError(f"{url}: {last_error}")
+        raise FetchError(f"{url.split('?')[0]}: {str(last_error)[:200]}")
 
-    def _real_get(self, url: str, params: dict) -> str:
+    def _real_get(self, url: str, params: dict, timeout: int) -> str:
         import requests
 
-        resp = requests.get(url, params=params, timeout=self.timeout, headers={"User-Agent": self.user_agent})
+        resp = requests.get(url, params=params, timeout=timeout, headers={"User-Agent": self.user_agent})
         resp.raise_for_status()
         return resp.text
 

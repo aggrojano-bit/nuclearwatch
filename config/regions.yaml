@@ -82,8 +82,6 @@ regions:
     radnet_stations:
       - [DC, WASHINGTON]
       - [CA, LOS ANGELES]
-      - [NY, NYC (EML)]
-      - [IL, CHICAGO]
       - [TX, HOUSTON]
       - [WA, SEATTLE]
       - [FL, MIAMI]

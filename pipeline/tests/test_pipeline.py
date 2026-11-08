@@ -61,7 +61,8 @@ def test_iaea_parse_and_classify():
 
 
 def test_iaea_fetch_filters_old_items():
-    notices = iaea_rss.fetch(fake_http(FakeNet(NOW)), {"feeds": {"a": "https://www.iaea.org/feeds/topnews"}, "max_age_days": 30}, REGIONS, RULES, NOW)
+    notices, raw = iaea_rss.fetch(fake_http(FakeNet(NOW)), {"feeds": {"a": "https://www.iaea.org/feeds/topnews"}, "max_age_days": 30}, REGIONS, RULES, NOW)
+    assert raw == 4
     assert not any("iran-old" in n["url"] for n in notices)
 
 
@@ -211,7 +212,8 @@ def test_full_run_calm(tmp_path):
     eo = next(r for r in latest["regions"] if r["id"] == "europa-oriental")
     assert eo["official_alert"] is True and eo["level"] == 0  # la alerta oficial no altera el nivel
     na = json.loads((tmp_path / "regions/norteamerica/detail.json").read_text())
-    assert na["radiation"]["evaluated"] == 10 and na["confidence"] == "alta"
+    assert na["radiation"]["evaluated"] == 8 and na["confidence"] == "media"
+    assert latest["sources"]["gdelt"]["items"] == 2  # solo 2 regiones consultadas por ejecución
     assert na["context"] == []  # contexto sin verificar no se publica
 
 
@@ -222,7 +224,7 @@ def test_full_run_source_failure_still_publishes(tmp_path):
 
 
 def test_full_run_radiation_event_then_dry_run_notification(tmp_path):
-    net = FakeNet(NOW, radnet_spike={"WASHINGTON": 3, "CHICAGO": 3})
+    net = FakeNet(NOW, radnet_spike={"WASHINGTON": 3, "HOUSTON": 3})
     s1 = run(tmp_path, http=fake_http(net), now=NOW)
     assert s1["levels"]["norteamerica"] == 2
     s2 = run(tmp_path, http=fake_http(net), now=NOW + timedelta(minutes=5))
@@ -238,3 +240,35 @@ def test_gdelt_bad_response_raises(bad):
     net = lambda url, params, t: bad  # noqa: E731
     with pytest.raises(Exception):
         gdelt.fetch(fake_http(net), load_yaml("sources.yaml")["gdelt"], REGIONS[0])
+
+
+def test_gdelt_rotation_covers_all_regions(tmp_path):
+    net = FakeNet(NOW)
+    for h in range(4):
+        run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=h))
+    latest = json.loads((tmp_path / "latest.json").read_text())
+    assert latest["sources"]["gdelt"]["items"] == 8
+    assert sum("gdeltproject" in c for c in net.calls) == 8  # sin consultas repetidas
+    run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=4))
+    assert sum("gdeltproject" in c for c in net.calls) == 8  # caché vigente (< 6 h)
+
+
+def test_gdelt_429_stops_and_keeps_cache(tmp_path):
+    run(tmp_path, http=fake_http(FakeNet(NOW)), now=NOW)
+    net = FakeNet(NOW, fail={"gdeltproject"})
+    run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=7))
+    latest = json.loads((tmp_path / "latest.json").read_text())
+    assert latest["sources"]["gdelt"]["items"] == 2  # las 2 regiones en caché siguen sirviendo
+
+
+def test_safecast_point_failure_does_not_drop_region():
+    calls = {"n": 0}
+    from fakenet import safecast_json
+    def net(url, params, t):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise TimeoutError("lento")
+        return safecast_json(NOW)
+    reg = next(r for r in REGIONS if r["id"] == "asia-oriental")
+    readings, errs = safecast.fetch(fake_http(net), load_yaml("sources.yaml")["safecast"], reg, NOW)
+    assert len(errs) == 1 and len(readings) > 0
