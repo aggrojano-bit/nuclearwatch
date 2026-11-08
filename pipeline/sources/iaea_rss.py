@@ -17,13 +17,21 @@ from common import Http, parse_iso
 ATOM = "{http://www.w3.org/2005/Atom}"
 
 
+def _local(tag) -> str:
+    return tag.rsplit("}", 1)[-1].lower() if isinstance(tag, str) else ""
+
+
 def _text(el, *names) -> str:
-    for name in names:
-        found = el.find(name)
-        if found is not None:
+    """Busca hijos por nombre local, sin importar el espacio de nombres (RSS 2.0, RSS 1.0/RDF o Atom)."""
+    wanted = [_local(n) for n in names]
+    children = list(el)
+    for name in wanted:
+        for found in children:
+            if _local(found.tag) != name:
+                continue
             if found.text and found.text.strip():
                 return found.text.strip()
-            href = found.get("href")
+            href = found.get("href") or found.get("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about")
             if href:
                 return href.strip()
     return ""
@@ -48,7 +56,7 @@ def _strip_html(value: str) -> str:
 
 def parse_feed(xml_text: str, feed_name: str) -> list[dict]:
     root = ET.fromstring(xml_text.encode("utf-8") if isinstance(xml_text, str) else xml_text)
-    items = root.findall("./channel/item") or root.findall(f"{ATOM}entry")
+    items = [el for el in root.iter() if _local(el.tag) in ("item", "entry")]
     out = []
     for it in items:
         title = _text(it, "title", f"{ATOM}title")
@@ -92,12 +100,16 @@ def fetch(http: Http, cfg: dict, regions: list[dict], rules: dict, now: datetime
     errors = []
     for name, url in cfg["feeds"].items():
         try:
-            for item in parse_feed(http.get(url), name):
+            text = http.get(url)
+            items = parse_feed(text, name)
+            if not items:
+                errors.append(f"{name}: 0 elementos; inicio de la respuesta: {text[:160]!r}")
+            for item in items:
                 seen.setdefault(item["id"], item)
         except Exception as exc:  # noqa: BLE001 - un feed caído no detiene a los demás
             errors.append(f"{name}: {exc}")
     if errors and not seen:
-        raise RuntimeError("; ".join(errors))
+        raise RuntimeError(" | ".join(errors))
     cutoff = now - timedelta(days=int(cfg.get("max_age_days", 30)))
     recent = [i for i in seen.values() if i["published"] >= cutoff]
     return classify(recent, regions, rules["official"]["incident_keywords"]), len(seen)

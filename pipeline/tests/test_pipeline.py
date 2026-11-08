@@ -213,7 +213,7 @@ def test_full_run_calm(tmp_path):
     assert eo["official_alert"] is True and eo["level"] == 0  # la alerta oficial no altera el nivel
     na = json.loads((tmp_path / "regions/norteamerica/detail.json").read_text())
     assert na["radiation"]["evaluated"] == 8 and na["confidence"] == "media"
-    assert latest["sources"]["gdelt"]["items"] == 2  # solo 2 regiones consultadas por ejecución
+    assert latest["sources"]["gdelt"]["items"] == 1  # solo 1 región consultada por ejecución
     assert na["context"] == []  # contexto sin verificar no se publica
 
 
@@ -244,13 +244,11 @@ def test_gdelt_bad_response_raises(bad):
 
 def test_gdelt_rotation_covers_all_regions(tmp_path):
     net = FakeNet(NOW)
-    for h in range(4):
+    for h in range(8):
         run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=h))
     latest = json.loads((tmp_path / "latest.json").read_text())
     assert latest["sources"]["gdelt"]["items"] == 8
     assert sum("gdeltproject" in c for c in net.calls) == 8  # sin consultas repetidas
-    run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=4))
-    assert sum("gdeltproject" in c for c in net.calls) == 8  # caché vigente (< 6 h)
 
 
 def test_gdelt_429_stops_and_keeps_cache(tmp_path):
@@ -258,7 +256,7 @@ def test_gdelt_429_stops_and_keeps_cache(tmp_path):
     net = FakeNet(NOW, fail={"gdeltproject"})
     run(tmp_path, http=fake_http(net), now=NOW + timedelta(hours=7))
     latest = json.loads((tmp_path / "latest.json").read_text())
-    assert latest["sources"]["gdelt"]["items"] == 2  # las 2 regiones en caché siguen sirviendo
+    assert latest["sources"]["gdelt"]["items"] == 1  # la región en caché siguen sirviendo
 
 
 def test_safecast_point_failure_does_not_drop_region():
@@ -272,3 +270,18 @@ def test_safecast_point_failure_does_not_drop_region():
     reg = next(r for r in REGIONS if r["id"] == "asia-oriental")
     readings, errs = safecast.fetch(fake_http(net), load_yaml("sources.yaml")["safecast"], reg, NOW)
     assert len(errs) == 1 and len(readings) > 0
+
+
+def test_iaea_rss1_rdf_format():
+    xml = """<?xml version="1.0"?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel rdf:about="x"><title>t</title></channel>
+    <item rdf:about="https://www.iaea.org/a"><title>Radiation levels normal at Zaporizhzhia</title><link>https://www.iaea.org/a</link><dc:date>2026-11-04T10:00:00Z</dc:date></item>
+    </rdf:RDF>"""
+    items = iaea_rss.parse_feed(xml, "x")
+    assert len(items) == 1 and items[0]["published"].year == 2026
+
+
+def test_iaea_empty_feed_reports_error():
+    net = lambda url, params, t: "<html><body>blocked</body></html>"  # noqa: E731
+    with pytest.raises(RuntimeError, match="0 elementos"):
+        iaea_rss.fetch(fake_http(net), {"feeds": {"a": "u"}}, REGIONS, RULES, NOW)

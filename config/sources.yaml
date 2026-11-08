@@ -27,7 +27,7 @@ gdelt:
   seconds_between_requests: 10
   # GDELT devolvió 429 desde GitHub Actions (IP compartida): se consultan pocas
   # regiones por ejecución y se reutiliza el dato (la señal usa días completos).
-  max_requests_per_run: 2
+  max_requests_per_run: 1
   refresh_hours: 6
   max_cache_age_hours: 48
   error_backoff_hours: 1
